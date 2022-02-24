@@ -12,7 +12,7 @@ import { doc, setDoc, collection, addDoc, docRef } from "firebase/firestore";
 import {
   userInit,
   areaSelect,
-  cinemaSelect,
+  /* cinemaSelect, */
   roleSelect
 } from "../config/struttura";
 
