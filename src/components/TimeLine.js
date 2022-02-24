@@ -8,7 +8,7 @@ import TimelineDot from "@mui/lab/TimelineDot";
 import FormLabel from "@mui/material/FormLabel";
 
 export default function TimeLine({ comments }) {
-  console.log("comments in timeline", comments);
+  /* console.log("comments in timeline", comments); */
   return (
     <div>
       <Timeline position="alternate" id="timetable">

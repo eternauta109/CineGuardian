@@ -19,8 +19,9 @@ import Button from "@mui/material/Button";
 function SetCamera({ user, cinema, item, setItem }) {
   const [open, setOpen] = useState(false);
   const [photosLink, setPhotoLinks] = useState([]);
+  const [provaPhoto, setProvaPhoto] = useState([])
 
-  console.log("photo", user, cinema);
+  /* console.log("photo", user, cinema); */
   const handleClick = () => {
     setOpen((prev) => !prev);
   };
@@ -40,17 +41,19 @@ function SetCamera({ user, cinema, item, setItem }) {
   };
 
   function handleTakePhoto(photoUri) {
+    console.log('photo uri', photoUri)
+    setProvaPhoto((e) => [...e, photoUri])
     const imageRef = ref(
       storage,
       `${cinema.name}/${item.item_ref}/${item.item_ref}-${item.photos.length}`
     );
-    console.log("path", imageRef.fullPath);
+    /* console.log("path", imageRef.fullPath); */
     let newArrayApp = item.photos;
     newArrayApp.push(imageRef.fullPath);
     setItem({ ...item, photos: newArrayApp });
 
     const metadata = {
-      contentType: "image/jpg",
+      /* contentType: "image/jpg", */
       customMetadata: {
         item_ref: `${item.item_ref}`,
         makeBy: `${user.name}`,
@@ -100,13 +103,15 @@ function SetCamera({ user, cinema, item, setItem }) {
           // Uh-oh, an error occurred!
         });
       console.log("ciao");
+    } else {
+
     }
   };
 
-  useEffect(() => {
-    takePhoto();
-  }, [item]);
-
+  /*  useEffect(() => {
+     takePhoto();
+   }, [item]);
+  */
   return (
     <Container>
       <ClickAwayListener onClickAway={handleClickAway}>
@@ -115,7 +120,7 @@ function SetCamera({ user, cinema, item, setItem }) {
             Open Camera
           </Button>
 
-          {open ? (
+          {open && cinema ? (
             <Box sx={styles}>
               <Camera
                 idealResolution={{ width: 300, height: 300 }}
@@ -139,11 +144,11 @@ function SetCamera({ user, cinema, item, setItem }) {
           width: "auto"
         }}
       >
-        {photosLink.length > 0 ? (
+        {provaPhoto.length > 0 ? (
           <ImageList sx={{ width: 500, height: 450 }} cols={3} rowHeight={164}>
-            {photosLink.map((item, key) => (
+            {provaPhoto.map((item, key) => (
               <ImageListItem key={key}>
-                <img src={item} srcSet={item} alt={item.title} loading="lazy" />
+                <img src={item} alt={item.title} loading="lazy" />
               </ImageListItem>
             ))}
           </ImageList>
