@@ -18,12 +18,12 @@ import Button from "@mui/material/Button";
 
 function SetCamera({ user, cinema, item, setItem }) {
   const [open, setOpen] = useState(false);
-  const [photosLink, setPhotoLinks] = useState([]);
-  const [provaPhoto, setProvaPhoto] = useState([])
+  const [photosLink, setPhotoLinks] = useState(null);
 
   /* console.log("photo", user, cinema); */
   const handleClick = () => {
     setOpen((prev) => !prev);
+    console.log(open)
   };
 
   const handleClickAway = () => {
@@ -40,41 +40,86 @@ function SetCamera({ user, cinema, item, setItem }) {
     bgcolor: "background.paper"
   };
 
-  function handleTakePhoto(photoUri) {
-    console.log('photo uri', photoUri)
-    setProvaPhoto((e) => [...e, photoUri])
-    const imageRef = ref(
-      storage,
-      `${cinema.name}/${item.item_ref}/${item.item_ref}-${item.photos.length}`
-    );
-    /* console.log("path", imageRef.fullPath); */
-    let newArrayApp = item.photos;
-    newArrayApp.push(imageRef.fullPath);
-    setItem({ ...item, photos: newArrayApp });
-
-    const metadata = {
-      /* contentType: "image/jpg", */
-      customMetadata: {
-        item_ref: `${item.item_ref}`,
-        makeBy: `${user.name}`,
-        takeAt: moment().format("MMMM Do YYYY, h:mm:ss a")
+  function loadXHR(url) {
+    return new Promise(function (resolve, reject) {
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url);
+        xhr.responseType = "blob";
+        xhr.onerror = function () {
+          reject("Network error.");
+        };
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            resolve(xhr.response);
+          } else {
+            reject("Loading error:" + xhr.statusText);
+          }
+        };
+        xhr.send();
+      } catch (err) {
+        reject(err.message);
       }
-    };
-
-    uploadBytes(imageRef, photoUri, metadata).then((snapshot) => {
-      console.log("Uploaded a blob or file!");
     });
   }
 
-  const takePhoto = () => {
+  const handleTakePhoto = async (photoUri) => {
+    //metto la foto in array locale per visulizzarle
+    const snapTime = moment().format("MMMM Do YYYY h:mm:ss a")
+
+    const imageRef = ref(
+      storage,
+      `${cinema.name}/${item.item_ref}/${item.item_ref}-${snapTime}.jpg`
+    );
+
+
+
+
+
+
+    //creao array di percorsi
+    console.log("path", imageRef.toString());
+    let newArrayApp = item.photos;
+    newArrayApp.push(imageRef.fullPath);
+    console.log("array item in photo", item);
+    setItem({ ...item, photos: newArrayApp });
+    console.log("array item", item.photos)
+
+
+    //setto i metadata
+    const metadata = {
+      contentType: "image/jpg",
+      customMetadata: {
+        item_ref: `${item.item_ref}`,
+        makeBy: `${user.name}`,
+        takeAt: snapTime
+      }
+    };
+
+    //carico il file
+    await loadXHR(photoUri).then(function (blob) {
+      // here the image is a blob
+      uploadBytes(imageRef, blob, metadata).then((snapshot) => {
+        console.log("Uploaded a blob or file!");
+      });
+    });
+
+  }
+
+  const takePhoto = async () => {
+    console.log("winner in take photo");
+
     if (cinema) {
+      setPhotoLinks([]);
       const path = `${cinema.name}/${item.item_ref}`;
+
       const listRef = ref(storage, `${path}`);
+
       // Find all the prefixes and items.
-      listAll(listRef)
+      await listAll(listRef)
         .then((res) => {
           res.prefixes.forEach((folderRef) => {
-            console.log("ref", folderRef);
+            console.log("ref", folderRef.toString());
             // All the prefixes under listRef.
             // You may call listAll() recursively on them.
           });
@@ -82,16 +127,9 @@ function SetCamera({ user, cinema, item, setItem }) {
             /* console.log(itemRef.toString()); */
             getDownloadURL(ref(storage, `${itemRef}`))
               .then((url) => {
-                setPhotoLinks((a) => [...a, url]);
-                console.log(photosLink);
-                const xhr = new XMLHttpRequest();
-                xhr.responseType = "blob";
-                xhr.onload = (event) => {
-                  const blob = xhr.response;
-                  console.log("blob", blob);
-                };
-                xhr.open("GET", url);
-                xhr.send();
+                console.log("url", url);
+                setPhotoLinks((e) => [...e, url]);
+
               })
               .catch((error) => {
                 console.log(error);
@@ -100,18 +138,17 @@ function SetCamera({ user, cinema, item, setItem }) {
           });
         })
         .catch((error) => {
+          console.log(error)
           // Uh-oh, an error occurred!
         });
-      console.log("ciao");
-    } else {
-
     }
   };
 
-  /*  useEffect(() => {
-     takePhoto();
-   }, [item]);
-  */
+  useEffect(() => {
+    takePhoto();
+    /* console.log("photolink", photosLink); */
+  }, [item.item_ref]);
+
   return (
     <Container>
       <ClickAwayListener onClickAway={handleClickAway}>
@@ -121,18 +158,19 @@ function SetCamera({ user, cinema, item, setItem }) {
           </Button>
 
           {open && cinema ? (
-            <Box sx={styles}>
-              <Camera
-                idealResolution={{ width: 300, height: 300 }}
-                onTakePhoto={(photoUri) => {
-                  handleTakePhoto(photoUri);
-                }}
-              />
-            </Box>
+            <>
+              <Box sx={styles}>
+                <Camera
+                  idealResolution={{ width: 300, height: 300 }}
+                  onTakePhoto={(photoUri) => {
+                    handleTakePhoto(photoUri);
+                  }}
+                />
+              </Box>
+            </>
           ) : null}
         </Box>
       </ClickAwayListener>
-
       <Box
         sx={{
           display: "flex",
@@ -144,15 +182,15 @@ function SetCamera({ user, cinema, item, setItem }) {
           width: "auto"
         }}
       >
-        {provaPhoto.length > 0 ? (
+        {photosLink && photosLink.length ? (
           <ImageList sx={{ width: 500, height: 450 }} cols={3} rowHeight={164}>
-            {provaPhoto.map((item, key) => (
+            {photosLink.map((item, key) => (
               <ImageListItem key={key}>
-                <img src={item} alt={item.title} loading="lazy" />
+                <img src={item} srcSet={item} alt={item.title} loading="lazy" />
               </ImageListItem>
             ))}
           </ImageList>
-        ) : null}
+        ) : <h2>no image for this item</h2>}
       </Box>
     </Container>
   );

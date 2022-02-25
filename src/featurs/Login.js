@@ -155,6 +155,7 @@ export default function SignIn() {
               margin="normal"
               required
               fullWidth
+              defaultValue="cupertinod"
               id="username"
               inputRef={username}
               label="Username"
@@ -165,6 +166,7 @@ export default function SignIn() {
             <TextField
               margin="normal"
               required
+              defaultValue="donato"
               fullWidth
               inputRef={password}
               name="password"
